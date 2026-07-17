@@ -42,7 +42,13 @@ I am currently figuring out how to enforce this "Thinking Process" within the ag
 ```mermaid
 flowchart TB
   %% Remote Access
-  User((Me<br>on train)) -. "Approve" .-> Discord[Discord Chat UI]
+  User((Me<br>on train))
+  Discord[Discord Chat UI]
+  Tailscale{Tailscale VPN}
+
+  %% User connections
+  User -. "Approve" .-> Discord
+  User === "Termius" === Tailscale
 
   %% Frontend Segment
   subgraph Frontend[Frontend Network : 172.16.0.0/24]
@@ -51,27 +57,34 @@ flowchart TB
     subgraph Proxmox[Proxmox VE - Ryzen 5300U]
       direction TB
       
-      %% 999を中央に配置
       Architect{LXC 999: Architect<br>AI Co-Pilot}
       
-      %% 他のコンテナを横並びに配置
+      %% 2x2 Container Layout
       subgraph Nodes[Containers & VMs]
         direction LR
-        Network[LXC 101: Network]
-        Immich[LXC 100: Immich]
-        HA[QEMU 102: HAOS]
-        Whoop[LXC 103: Whoop]
+        subgraph Row1[ ]
+          direction TB
+          Network[LXC 101: Network]
+          HA[QEMU 102: HAOS]
+        end
+        subgraph Row2[ ]
+          direction TB
+          Immich[LXC 100: Immich]
+          Whoop[LXC 103: Whoop]
+        end
       end
       
-      %% 999を中央に配置するための見えないリンク
-      Architect ~~~ Network
-      Architect ~~~ Immich
-      Architect ~~~ HA
-      Architect ~~~ Whoop
+      %% SSH Connections from Architect
+      Architect -->|SSH| Network
+      Architect -->|SSH| Immich
+      Architect -->|SSH| HA
+      Architect -->|SSH| Whoop
     end
   end
 
+  %% Inbound connections
   Discord -- "Context & Commands" --> Architect
+  Tailscale -.-> Proxmox
 
   %% Backend Segment
   subgraph Backend[Backend Network : 10.0.0.0/24 / Isolated]
@@ -79,7 +92,7 @@ flowchart TB
     QNAP[(QNAP TS-233<br>NFS Storage)]
   end
 
-  %% 各コンテナからNASへ直接線を引く（枠でまとめられないようにする）
+  %% Connections to Backend NAS
   Immich ===|NIC 2| QNAP
   HA -.-|Planned| QNAP
   Whoop -.-|Planned| QNAP
@@ -88,6 +101,12 @@ flowchart TB
   style Frontend fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
   style Backend fill:#ffebee,stroke:#c62828,stroke-width:2px
   style Architect fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
+  style QNAP fill:#fff3e0,stroke:#e65100,stroke-width:2px
+  style Proxmox fill:#fafafa,stroke:#424242,stroke-dasharray: 5 5
+  style Tailscale fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  style Nodes fill:none,stroke:none
+  style Row1 fill:none,stroke:none
+  style Row2 fill:none,stroke:none
   style QNAP fill:#fff3e0,stroke:#e65100,stroke-width:2px
   style Proxmox fill:#fafafa,stroke:#424242,stroke-dasharray: 5 5
   style Nodes fill:none,stroke:none
