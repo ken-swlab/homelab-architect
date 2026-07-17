@@ -38,3 +38,9 @@ I am currently figuring out how to enforce this "Thinking Process" within the ag
 * **Remote Management:** Tailscale VPN + AdGuard Home, allowing secure configuration via Termius (SSH) during my daily 1-hour train commute.
 
 <img width="549" height="534" alt="skgイメージ図 drawio" src="https://github.com/user-attachments/assets/c985c54f-9517-4a46-aa91-626c8d4169aa" />
+---
+
+## 5. Roadmap
+* **Phase 1: Context & Info Gathering (Done)** - Reads Proxmox state and configurations.
+* **Phase 2: Sandbox Validation (In Progress)** - Architect will test, debug, and validate its own generated Ansible/Docker code inside an isolated sandbox container.
+* **Phase 3: Human-in-the-Loop Orchestration (Future)** - Architect sends an interactive Discord post with an `[Approve & Deploy]` button. Production execution happens only upon human approval.
