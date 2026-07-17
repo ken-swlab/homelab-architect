@@ -48,7 +48,7 @@ flowchart TB
 
   %% User connections
   User -. "Approve" .-> Discord
-  User === "Termius" === Tailscale
+  User -- "Termius" --> Tailscale
 
   %% Frontend Segment
   subgraph Frontend[Frontend Network : 172.16.0.0/24]
@@ -107,6 +107,3 @@ flowchart TB
   style Nodes fill:none,stroke:none
   style Row1 fill:none,stroke:none
   style Row2 fill:none,stroke:none
-  style QNAP fill:#fff3e0,stroke:#e65100,stroke-width:2px
-  style Proxmox fill:#fafafa,stroke:#424242,stroke-dasharray: 5 5
-  style Nodes fill:none,stroke:none
