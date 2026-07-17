@@ -44,38 +44,45 @@ flowchart TB
   %% Remote Access
   User((Me<br>on train)) -. "Approve" .-> Discord[Discord Chat UI]
 
-  %% Frontend Segment (Everything lives here primarily)
+  %% Frontend Segment
   subgraph Frontend[Frontend Network : 172.16.0.0/24]
     direction TB
     
     subgraph Proxmox[Proxmox VE - Ryzen 5300U]
       direction TB
+      
+      %% 999を中央に配置
       Architect{LXC 999: Architect<br>AI Co-Pilot}
       
-      %% Grouping other nodes to keep it compact
+      %% 他のコンテナを横並びに配置
       subgraph Nodes[Containers & VMs]
+        direction LR
         Network[LXC 101: Network]
         Immich[LXC 100: Immich]
         HA[QEMU 102: HAOS]
         Whoop[LXC 103: Whoop]
       end
       
-      Architect ~~~ Nodes
+      %% 999を中央に配置するための見えないリンク
+      Architect ~~~ Network
+      Architect ~~~ Immich
+      Architect ~~~ HA
+      Architect ~~~ Whoop
     end
   end
 
   Discord -- "Context & Commands" --> Architect
 
-  %% Backend Segment (Isolated)
+  %% Backend Segment
   subgraph Backend[Backend Network : 10.0.0.0/24 / Isolated]
     direction TB
     QNAP[(QNAP TS-233<br>NFS Storage)]
   end
 
-  %% Connections to Backend
-  Immich ===|NIC 2| Backend
-  HA -.-|Planned| Backend
-  Whoop -.-|Planned| Backend
+  %% 各コンテナからNASへ直接線を引く（枠でまとめられないようにする）
+  Immich ===|NIC 2| QNAP
+  HA -.-|Planned| QNAP
+  Whoop -.-|Planned| QNAP
 
   %% Styling
   style Frontend fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
