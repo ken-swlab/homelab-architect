@@ -80,4 +80,13 @@ flowchart LR
   style QNAP fill:#fff3e0,stroke:#e65100,stroke-width:2px
   style Proxmox fill:#fafafa,stroke:#424242,stroke-dasharray: 5 5
 
+---
+
+## 4. Hardware & Network Topology
+* **Host Machine:** GenMachine MD Ryzen 5300U (4C/8T), 16GB DDR4, 500GB SSD, Dual 2.5G LAN (Running Proxmox VE).
+* **Storage:** QNAP TS-233 (4TB) connected via a dedicated storage path.
+* **Network Isolation:** 
+    * **NIC 1 (Frontend):** Connected to the Provider Wi-Fi segment (`172.16.0.0/24`).
+    * **NIC 2 (Backend):** Connected **directly** to the QNAP NAS (`10.0.0.0/24` private segment). The backend network is completely invisible from the frontend.
+* **Remote Management:** Tailscale VPN + AdGuard Home, allowing secure configuration via Termius (SSH) during my daily 1-hour train commute.
 
