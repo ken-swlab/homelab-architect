@@ -40,54 +40,47 @@ I am currently figuring out how to enforce this "Thinking Process" within the ag
 ### Architecture Diagram
 
 ```mermaid
-flowchart LR
-  %% Remote Section
-  User((Me<br>on train))
-  Discord[Discord<br>Chat UI]
-  User -- "Approve & Deploy" --> Discord
+flowchart TB
+  %% Remote Access
+  User((Me<br>on train)) -. "Approve" .-> Discord[Discord Chat UI]
 
-  %% Proxmox Host
-  subgraph Proxmox[Proxmox VE - Ryzen 5300U]
-    direction LR
-
-    subgraph Apps[Containers & VMs]
+  %% Frontend Segment (Everything lives here primarily)
+  subgraph Frontend[Frontend Network : 172.16.0.0/24]
+    direction TB
+    
+    subgraph Proxmox[Proxmox VE - Ryzen 5300U]
       direction TB
       Architect{LXC 999: Architect<br>AI Co-Pilot}
-      Immich[LXC 100: Immich<br>Photo Pipeline]
-      Network[LXC 101: Network<br>DNS & Routing]
-      HA[QEMU 102: HAOS<br>Smart Home]
-      Whoop[LXC 103: Whoop<br>Biometrics]
+      
+      %% Grouping other nodes to keep it compact
+      subgraph Nodes[Containers & VMs]
+        Network[LXC 101: Network]
+        Immich[LXC 100: Immich]
+        HA[QEMU 102: HAOS]
+        Whoop[LXC 103: Whoop]
+      end
+      
+      Architect ~~~ Nodes
     end
-
-    subgraph VNet[Internal Virtual Bridges]
-      direction TB
-      Frontend((Frontend Net<br>172.16.0.0/24))
-      Backend((Backend Net<br>10.0.0.0/24<br>Isolated))
-    end
-
-    %% Frontend Connections (vmbr0)
-    Architect -.-> Frontend
-    Immich -.-> Frontend
-    Network -.-> Frontend
-    HA -.-> Frontend
-    Whoop -.-> Frontend
-
-    %% Backend Connections (vmbr1 / Isolated)
-    Immich === Backend
-    Network === Backend
   end
 
   Discord -- "Context & Commands" --> Architect
 
-  %% External Storage
-  QNAP[(QNAP TS-233<br>NFS Storage)]
-  Backend ===|Physical NIC 2| QNAP
+  %% Backend Segment (Isolated)
+  subgraph Backend[Backend Network : 10.0.0.0/24 / Isolated]
+    direction TB
+    QNAP[(QNAP TS-233<br>NFS Storage)]
+  end
 
-  %% Styling (Nerd Sniping Visuals)
-  style Backend fill:#ffebee,stroke:#c62828,stroke-width:2px
+  %% Connections to Backend
+  Immich ===|NIC 2| Backend
+  HA -.-|Planned| Backend
+  Whoop -.-|Planned| Backend
+
+  %% Styling
   style Frontend fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+  style Backend fill:#ffebee,stroke:#c62828,stroke-width:2px
   style Architect fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
   style QNAP fill:#fff3e0,stroke:#e65100,stroke-width:2px
   style Proxmox fill:#fafafa,stroke:#424242,stroke-dasharray: 5 5
-  style Apps fill:none,stroke:none
-  style VNet fill:none,stroke:none
+  style Nodes fill:none,stroke:none
