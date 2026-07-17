@@ -80,9 +80,4 @@ flowchart LR
   style QNAP fill:#fff3e0,stroke:#e65100,stroke-width:2px
   style Proxmox fill:#fafafa,stroke:#424242,stroke-dasharray: 5 5
 
----
 
-## 5. Roadmap
-* **Phase 1: Context & Info Gathering (Done)** - Reads Proxmox state and configurations.
-* **Phase 2: Sandbox Validation (In Progress)** - Architect will test, debug, and validate its own generated Ansible/Docker code inside an isolated sandbox container.
-* **Phase 3: Human-in-the-Loop Orchestration (Future)** - Architect sends an interactive Discord post with an `[Approve & Deploy]` button. Production execution happens only upon human approval.
