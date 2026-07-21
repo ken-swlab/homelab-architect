@@ -1,0 +1,173 @@
+---
+- name: Proxmox VE Infrastructure Configuration
+  hosts: proxmox_host # This needs to be defined in your Ansible inventory, e.g., pve01
+  connection: local   # Or ssh if connecting directly to pve01 as an Ansible host
+  gather_facts: false
+
+  vars:
+    # --- Proxmox API Credentials ---
+    # It is highly recommended to use Ansible Vault for sensitive data.
+    # Replace with your actual Proxmox host IP or hostname
+    proxmox_api_host: "pve01.yourdomain.com" # Example, replace with actual
+    # Replace with your Proxmox API user (e.g., ansible-user@pam)
+    proxmox_api_user: "ansible-user@pam" # Example, replace with actual
+    # Replace with your Proxmox API password or use API token
+    proxmox_api_password: "YOUR_PROXMOX_API_PASSWORD" # Example, replace with actual
+    # Alternatively, for better security, use API token:
+    # proxmox_api_token_id: "your_api_token_id"
+    # proxmox_api_token_secret: "your_api_token_secret"
+
+    # --- LXC OS Template ---
+    # Replace with the correct OS template available on your Proxmox 'local' storage or other storage.
+    # You can find available templates via `pveam available` or Proxmox web UI (Datacenter -> Storage -> local -> CT Templates).
+    # Example: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+    lxc_os_template: "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst" # Placeholder, update this.
+
+  tasks:
+    - name: Configure LXC container immich01 (ID 100)
+      community.proxmox.proxmox_lxc:
+        api_host: "{{ proxmox_api_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        node: pve01 # Proxmox node name as configured in Proxmox
+        vmid: 100
+        hostname: immich01.skg.sw-lab.net
+        state: present
+        ostemplate: "{{ lxc_os_template }}"
+        # WARNING: Memory value (160GB) is very large. Please verify if this is intended.
+        # Original report: 160064 MB (約160 GB) - *非常に大きな値であり、設定ミスや誤解の可能性がないか確認が必要です。*
+        memory: 163840 # 160 GB in MB (160 * 1024)
+        cores: 4
+        unprivileged: true
+        features:
+          keyctl: 1
+          nesting: 1
+        net:
+          net0:
+            bridge: vmbr0
+            ip: 192.168.3.13/24
+            gw: 192.168.3.1
+            name: eth0
+          net1:
+            bridge: vmbr1
+            ip: 10.10.10.13/24
+            name: eth1
+        rootfs: "local-lvm:20G" # `local-lvm` is the storage, `20G` is the size.
+        # Mount points: `mp0: /mnt/nfs_immich,mp=/mnt/media/immich`
+        # Using `lxc_conf` for raw LXC configuration to handle complex mount points.
+        lxc_conf:
+          "mp0": "/mnt/nfs_immich,mp=/mnt/media/immich"
+
+    - name: Configure LXC container network01 (ID 101)
+      community.proxmox.proxmox_lxc:
+        api_host: "{{ proxmox_api_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        node: pve01
+        vmid: 101
+        hostname: network01.skg.sw-lab.net
+        state: present
+        ostemplate: "{{ lxc_os_template }}"
+        memory: 1024
+        cores: 1
+        unprivileged: true
+        features:
+          nesting: 1
+        net:
+          net0:
+            bridge: vmbr0
+            ip: 192.168.3.14/24
+            gw: 192.168.3.1
+            name: eth0
+          net1:
+            bridge: vmbr0 # Note: net0 and net1 are on the same bridge vmbr0 with different subnets.
+            ip: 10.10.10.14/24
+            name: eth1
+        rootfs: "local-lvm:8G"
+        # /dev/net/tun bind mount for VPN/network functions
+        # Using `lxc_conf` for raw LXC configuration.
+        lxc_conf:
+          "lxc.cgroup2.devices.allow": "c 10:200 rwm"
+          "lxc.mount.entry": "/dev/net/tun dev/net/tun none bind,create=file"
+
+    - name: Configure LXC container kenwhoop01 (ID 103)
+      community.proxmox.proxmox_lxc:
+        api_host: "{{ proxmox_api_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        node: pve01
+        vmid: 103
+        hostname: kenwhoop01.skg.sw-lab.net
+        state: present
+        ostemplate: "{{ lxc_os_template }}"
+        memory: 2048
+        cores: 2
+        unprivileged: true
+        features:
+          keyctl: 1
+          nesting: 1
+        net:
+          net0:
+            bridge: vmbr0
+            ip: 192.168.3.16/24
+            gw: 192.168.3.1
+            name: eth0
+        rootfs: "local-lvm:16G"
+        # DNS settings
+        nameserver: "8.8.8.8"
+        searchdomain: "192.168.3.14"
+
+    - name: Configure LXC container skg-architect (ID 999)
+      community.proxmox.proxmox_lxc:
+        api_host: "{{ proxmox_api_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        node: pve01
+        vmid: 999
+        hostname: skg-architect # Assuming hostname is skg-architect based on context
+        state: present
+        ostemplate: "{{ lxc_os_template }}"
+        memory: 512
+        cores: 1
+        unprivileged: true
+        features:
+          nesting: 1
+        net:
+          net0:
+            bridge: vmbr0
+            ip: 192.168.3.9/24
+            gw: 192.168.3.1
+            name: eth0
+        rootfs: "local-lvm:8G"
+        # DNS searchdomain
+        searchdomain: "192.168.3.14"
+
+    - name: Configure QEMU VM haos (ID 102)
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ proxmox_api_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        node: pve01
+        vmid: 102
+        name: haos
+        state: present
+        bios: ovmf # UEFI BIOS
+        cores: 2
+        memory: 4096 # 4 GB
+        # Disk definition: `scsi0: local-lvm:vm-102-disk-0,discard=on,size=64G,ssd=1`
+        # `disks` parameter is typically used for defining VM disks.
+        disks:
+          - storage: local-lvm
+            size: 64G
+            type: scsi # Define disk type as scsi
+            # For `discard=on,ssd=1`, these are advanced options that might be handled differently by the module.
+            # If the module doesn't expose `discard` or `ssd` directly, they might need to be set
+            # via `storage_options` or in the Proxmox storage configuration itself.
+            # User should verify module documentation for these specific parameters.
+        net:
+          net0:
+            bridge: vmbr0
+            model: virtio # implied by `virtio=MAC`
+            # macaddr: "02:31:5F:00:4B:08" # MAC is usually autogenerated, can specify if needed.
+        description: "Homeassistant OS VM provided by community-scripts.org"
+        start: true # Ensure the VM is started after configuration/creation
