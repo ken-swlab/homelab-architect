@@ -1,0 +1,4 @@
+services:
+  immich-server:
+    volumes:
+      - /mnt/media/immich/edited_photos:/import:ro
