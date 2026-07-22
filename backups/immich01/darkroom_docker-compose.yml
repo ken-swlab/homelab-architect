@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.orchestrator
+    container_name: darkroom_orchestrator
+    volumes:
+      - /mnt/media/immich:/mnt/media/immich
+      - ./app:/app
+    environment:
+      - TZ=Asia/Tokyo
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    restart: always
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: darkroom_worker
+    volumes:
+      - /mnt/media/immich:/mnt/media/immich
+      - ./app:/app
+    environment:
+      - TZ=Asia/Tokyo
+    restart: always
